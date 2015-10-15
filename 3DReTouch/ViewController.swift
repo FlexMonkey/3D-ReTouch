@@ -8,39 +8,57 @@
 
 import UIKit
 
-class ViewController: UIViewController
+let fullResImageSide: CGFloat = 640
+
+class ViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSource
 {
-    let sunflower = UIImage(named: "sunflower.jpg")!  // 640 x 640
+    let sunflower = UIImage(named: "sunflower.jpg")!
     
-    let gradient = CIFilter(name: "CIRadialGradient")! // inputColor0  inputColor1 inputCenter inputRadius
-    let blendWithMask = CIFilter(name: "CIBlendWithMask")! // inputBackgroundImage  inputMaskImage
-    let noir = CIFilter(name: "CIPhotoEffectNoir")!
+    let gradient = CIFilter(name: "CIRadialGradient")!
+    let blendWithMask = CIFilter(name: "CIBlendWithMask")!
+    var filter = CIFilter(name: "CIPhotoEffectChrome")!
 
     let gradientCompositeFilter = CIFilter(name: "CISourceOverCompositing")!
     
     let gradientAccumulator = CIImageAccumulator(
-        extent: CGRect(origin: CGPointZero, size: CGSize(width: 640, height: 640)),
+        extent: CGRect(origin: CGPointZero, size: CGSize(width: fullResImageSide, height: fullResImageSide)),
         format: kCIFormatARGB8)
     
     let imageAccumulator = CIImageAccumulator(
-        extent: CGRect(origin: CGPointZero, size: CGSize(width: 640, height: 640)),
+        extent: CGRect(origin: CGPointZero, size: CGSize(width: fullResImageSide, height: fullResImageSide)),
         format: kCIFormatARGB8)
     
     let imageView = UIImageView()
+    let picker = UIPickerView()
+    
+    let filters = [
+        "CIPhotoEffectChrome",
+        "CIPhotoEffectFade",
+        "CIPhotoEffectInstant",
+        "CIPhotoEffectMono",
+        "CIPhotoEffectNoir",
+        "CIPhotoEffectProcess",
+        "CIPhotoEffectTonal",
+        "CIPhotoEffectTransfer",
+        "CISepiaTone"]
     
     override func viewDidLoad()
     {
         super.viewDidLoad()
-        view.backgroundColor = UIColor.blackColor()
         
         let ciSunflower = CIImage(image: sunflower)!
         
         imageAccumulator.setImage(ciSunflower)
 
         imageView.image = UIImage(CIImage: imageAccumulator.image())
-        
+        imageView.contentScaleFactor = 0.25
+        imageView.contentMode = UIViewContentMode.ScaleAspectFit
+
         view.addSubview(imageView)
-        imageView.frame = CGRect(origin: CGPointZero, size: CGSize(width: 640, height: 640))
+        view.addSubview(picker)
+        
+        picker.delegate = self
+        picker.dataSource = self
     }
 
     override func touchesBegan(touches: Set<UITouch>, withEvent event: UIEvent?)
@@ -69,12 +87,14 @@ class ViewController: UIViewController
         {
             return
         }
+
+        let imageScale = imageViewSide / fullResImageSide;
         
         for coalescedTouch in coalescedTouches
         {
-            let location = coalescedTouch.locationInView(imageView)
+            let location = coalescedTouch.locationInView(imageView); print(location)
             
-            gradient.setValue(CIVector(x: location.x, y: 640 - location.y), forKey: kCIInputCenterKey)
+            gradient.setValue(CIVector(x: location.x / imageScale, y: (imageViewSide - location.y) / imageScale), forKey: kCIInputCenterKey)
             
             let white = CIColor(red: 1, green: 1, blue: 1, alpha: 0.05 + ((coalescedTouch.force / coalescedTouch.maximumPossibleForce) * 0.25))
             let black = CIColor(red: 0, green: 0, blue: 0, alpha: 0)
@@ -91,14 +111,54 @@ class ViewController: UIViewController
             gradientAccumulator.setImage(gradientCompositeFilter.valueForKey(kCIOutputImageKey) as! CIImage)
         }
         
-        noir.setValue(imageAccumulator.image(), forKey: kCIInputImageKey)
+        filter.setValue(imageAccumulator.image(), forKey: kCIInputImageKey)
         
         blendWithMask.setValue(imageAccumulator.image(), forKey: kCIInputBackgroundImageKey)
-        blendWithMask.setValue(noir.valueForKey(kCIOutputImageKey) as! CIImage, forKey: kCIInputImageKey)
+        blendWithMask.setValue(filter.valueForKey(kCIOutputImageKey) as! CIImage, forKey: kCIInputImageKey)
         blendWithMask.setValue(gradientAccumulator.image(), forKey: kCIInputMaskImageKey)
         
         imageAccumulator.setImage(blendWithMask.valueForKey(kCIOutputImageKey) as! CIImage)
         imageView.image = UIImage(CIImage: blendWithMask.valueForKey(kCIOutputImageKey) as! CIImage)
     }
     
+    override func viewDidLayoutSubviews()
+    {
+        imageView.frame = CGRect(x: 0, y: topLayoutGuide.length, width: imageViewSide, height: imageViewSide)
+        
+        if view.frame.width > view.frame.height
+        {
+            picker.frame = CGRect(x: imageViewSide, y: topLayoutGuide.length, width: view.frame.width - imageViewSide, height: imageViewSide)
+        }
+        else
+        {
+            picker.frame = CGRect(x: 0, y: topLayoutGuide.length + imageViewSide, width: view.frame.width, height: view.frame.height - imageViewSide - topLayoutGuide.length)
+        }
+    }
+    
+    var imageViewSide: CGFloat
+    {
+        return min(view.frame.width, view.frame.height - topLayoutGuide.length)
+    }
+    
+    //-----
+    
+    func pickerView(pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int)
+    {
+        filter = CIFilter(name: filters[row])!
+    }
+    
+    func pickerView(pickerView: UIPickerView, titleForRow row: Int, forComponent component: Int) -> String?
+    {
+        return filters[row]
+    }
+    
+    func pickerView(pickerView: UIPickerView, numberOfRowsInComponent component: Int) -> Int
+    {
+        return filters.count
+    }
+    
+    func numberOfComponentsInPickerView(pickerView: UIPickerView) -> Int
+    {
+        return 1; 
+    }
 }
