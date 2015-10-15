@@ -15,6 +15,7 @@
 		3E0CD2701BCF7AFF00554B8E /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 3E0CD26E1BCF7AFF00554B8E /* LaunchScreen.storyboard */; };
 		3E0CD27B1BCF7AFF00554B8E /* _DReTouchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E0CD27A1BCF7AFF00554B8E /* _DReTouchTests.swift */; };
 		3E0CD2861BCF7AFF00554B8E /* _DReTouchUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E0CD2851BCF7AFF00554B8E /* _DReTouchUITests.swift */; };
+		3E0CD2941BCF7B1E00554B8E /* sunflower.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 3E0CD2931BCF7B1E00554B8E /* sunflower.jpg */; settings = {ASSET_TAGS = (); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -49,6 +50,7 @@
 		3E0CD2811BCF7AFF00554B8E /* 3DReTouchUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = 3DReTouchUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3E0CD2851BCF7AFF00554B8E /* _DReTouchUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = _DReTouchUITests.swift; sourceTree = "<group>"; };
 		3E0CD2871BCF7AFF00554B8E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		3E0CD2931BCF7B1E00554B8E /* sunflower.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = sunflower.jpg; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -99,6 +101,7 @@
 		3E0CD2611BCF7AFF00554B8E /* 3DReTouch */ = {
 			isa = PBXGroup;
 			children = (
+				3E0CD2931BCF7B1E00554B8E /* sunflower.jpg */,
 				3E0CD2621BCF7AFF00554B8E /* AppDelegate.swift */,
 				3E0CD2641BCF7AFF00554B8E /* ViewController.swift */,
 				3E0CD2661BCF7AFF00554B8E /* Main.storyboard */,
@@ -232,6 +235,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				3E0CD2701BCF7AFF00554B8E /* LaunchScreen.storyboard in Resources */,
+				3E0CD2941BCF7B1E00554B8E /* sunflower.jpg in Resources */,
 				3E0CD26D1BCF7AFF00554B8E /* Assets.xcassets in Resources */,
 				3E0CD2681BCF7AFF00554B8E /* Main.storyboard in Resources */,
 			);
