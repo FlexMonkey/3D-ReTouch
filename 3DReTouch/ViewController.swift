@@ -16,7 +16,7 @@ class ViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSo
     
     let gradient = CIFilter(name: "CIRadialGradient")!
     let blendWithMask = CIFilter(name: "CIBlendWithMask")!
-    var filter = CIFilter(name: "CIPhotoEffectChrome")!
+    var filter = CIFilter(name: "CICrystallize")!
 
     let gradientCompositeFilter = CIFilter(name: "CISourceOverCompositing")!
     
@@ -32,15 +32,11 @@ class ViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSo
     let picker = UIPickerView()
     
     let filters = [
-        "CIPhotoEffectChrome",
-        "CIPhotoEffectFade",
-        "CIPhotoEffectInstant",
-        "CIPhotoEffectMono",
-        "CIPhotoEffectNoir",
-        "CIPhotoEffectProcess",
-        "CIPhotoEffectTonal",
-        "CIPhotoEffectTransfer",
-        "CISepiaTone"]
+        "CICrystallize",
+        "CICMYKHalftone",
+        "CIGaussianBlur",
+        "CIUnsharpMask",
+        "CIColorPosterize"]
     
     override func viewDidLoad()
     {
@@ -73,11 +69,6 @@ class ViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSo
         createGradientFromTouches(touches, withEvent: event)
     }
     
-    override func touchesEnded(touches: Set<UITouch>, withEvent event: UIEvent?)
-    {
-        print("end")
-    }
-    
     func createGradientFromTouches(touches: Set<UITouch>, withEvent event: UIEvent?)
     {
         guard let touch = touches.first,
@@ -92,18 +83,18 @@ class ViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSo
         
         for coalescedTouch in coalescedTouches
         {
-            let location = coalescedTouch.locationInView(imageView); print(location)
+            let location = coalescedTouch.locationInView(imageView)
             
             gradient.setValue(CIVector(x: location.x / imageScale, y: (imageViewSide - location.y) / imageScale), forKey: kCIInputCenterKey)
             
-            let white = CIColor(red: 1, green: 1, blue: 1, alpha: 0.05 + ((coalescedTouch.force / coalescedTouch.maximumPossibleForce) * 0.25))
+            let white = CIColor(red: 0.5, green: 0.5, blue: 0.5, alpha: 0.001 + ((coalescedTouch.force / coalescedTouch.maximumPossibleForce) * 0.05))
             let black = CIColor(red: 0, green: 0, blue: 0, alpha: 0)
             
             gradient.setValue(white, forKey: "inputColor0")
             gradient.setValue(black, forKey: "inputColor1")
             
             gradient.setValue(1, forKey: "inputRadius0")
-            gradient.setValue(20 + ((coalescedTouch.force / coalescedTouch.maximumPossibleForce) * 40), forKey: "inputRadius1")
+            gradient.setValue(1 + ((coalescedTouch.force / coalescedTouch.maximumPossibleForce) * 100), forKey: "inputRadius1")
             
             gradientCompositeFilter.setValue(gradientAccumulator.image(), forKey: kCIInputBackgroundImageKey)
             gradientCompositeFilter.setValue(gradient.valueForKey(kCIOutputImageKey), forKey: kCIInputImageKey)
