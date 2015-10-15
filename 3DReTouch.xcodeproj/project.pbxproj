@@ -410,6 +410,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = "uk.co.flexmonkey.-DReTouch";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -421,6 +422,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = "uk.co.flexmonkey.-DReTouch";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
@@ -491,6 +493,7 @@
 				3E0CD28C1BCF7AFF00554B8E /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		3E0CD28D1BCF7AFF00554B8E /* Build configuration list for PBXNativeTarget "3DReTouchTests" */ = {
 			isa = XCConfigurationList;
@@ -499,6 +502,7 @@
 				3E0CD28F1BCF7AFF00554B8E /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		3E0CD2901BCF7AFF00554B8E /* Build configuration list for PBXNativeTarget "3DReTouchUITests" */ = {
 			isa = XCConfigurationList;
@@ -507,6 +511,7 @@
 				3E0CD2921BCF7AFF00554B8E /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 

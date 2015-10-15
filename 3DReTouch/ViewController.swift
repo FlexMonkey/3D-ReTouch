@@ -36,33 +36,31 @@ class ViewController: UIViewController
         let ciSunflower = CIImage(image: sunflower)!
         
         imageAccumulator.setImage(ciSunflower)
-        
-        let white = CIColor(red: 1, green: 1, blue: 1, alpha: 1)
-        let black = CIColor(red: 0, green: 0, blue: 0, alpha: 0)
-        
-        gradient.setValue(white, forKey: "inputColor0")
-        gradient.setValue(black, forKey: "inputColor1")
-        gradient.setValue(CIVector(x: 100, y: 100), forKey:  kCIInputCenterKey)
-        gradient.setValue(50, forKey: "inputRadius0")
-        gradient.setValue(100, forKey: "inputRadius1")
-        
-        noir.setValue(ciSunflower, forKey: kCIInputImageKey)
-        
-        blendWithMask.setValue(ciSunflower, forKey: kCIInputBackgroundImageKey)
-        blendWithMask.setValue(noir.valueForKey(kCIOutputImageKey) as! CIImage, forKey: kCIInputImageKey)
-        blendWithMask.setValue(gradient.valueForKey(kCIOutputImageKey) as! CIImage, forKey: kCIInputMaskImageKey)
-        
-        //----
+
+        imageView.image = UIImage(CIImage: imageAccumulator.image())
         
         view.addSubview(imageView)
         imageView.frame = CGRect(origin: CGPointZero, size: CGSize(width: 640, height: 640))
-        
-        imageView.image = UIImage(CIImage: blendWithMask.valueForKey(kCIOutputImageKey) as! CIImage)
-        
-        // imageView.image = UIImage(CIImage: imageAccumulator.image())
     }
 
+    override func touchesBegan(touches: Set<UITouch>, withEvent event: UIEvent?)
+    {
+        gradientAccumulator.setImage(CIImage())
+
+        createGradientFromTouches(touches, withEvent: event)
+    }
+    
     override func touchesMoved(touches: Set<UITouch>, withEvent event: UIEvent?)
+    {
+        createGradientFromTouches(touches, withEvent: event)
+    }
+    
+    override func touchesEnded(touches: Set<UITouch>, withEvent event: UIEvent?)
+    {
+        print("end")
+    }
+    
+    func createGradientFromTouches(touches: Set<UITouch>, withEvent event: UIEvent?)
     {
         guard let touch = touches.first,
             event = event,
@@ -72,22 +70,35 @@ class ViewController: UIViewController
             return
         }
         
-        gradientAccumulator.clear()
-        
         for coalescedTouch in coalescedTouches
         {
             let location = coalescedTouch.locationInView(imageView)
             
             gradient.setValue(CIVector(x: location.x, y: 640 - location.y), forKey: kCIInputCenterKey)
             
+            let white = CIColor(red: 1, green: 1, blue: 1, alpha: 0.05 + ((coalescedTouch.force / coalescedTouch.maximumPossibleForce) * 0.25))
+            let black = CIColor(red: 0, green: 0, blue: 0, alpha: 0)
+            
+            gradient.setValue(white, forKey: "inputColor0")
+            gradient.setValue(black, forKey: "inputColor1")
+            
+            gradient.setValue(1, forKey: "inputRadius0")
+            gradient.setValue(20 + ((coalescedTouch.force / coalescedTouch.maximumPossibleForce) * 40), forKey: "inputRadius1")
+            
             gradientCompositeFilter.setValue(gradientAccumulator.image(), forKey: kCIInputBackgroundImageKey)
             gradientCompositeFilter.setValue(gradient.valueForKey(kCIOutputImageKey), forKey: kCIInputImageKey)
-
+            
             gradientAccumulator.setImage(gradientCompositeFilter.valueForKey(kCIOutputImageKey) as! CIImage)
         }
         
-        imageView.image = UIImage(CIImage: gradientAccumulator.image())
+        noir.setValue(imageAccumulator.image(), forKey: kCIInputImageKey)
+        
+        blendWithMask.setValue(imageAccumulator.image(), forKey: kCIInputBackgroundImageKey)
+        blendWithMask.setValue(noir.valueForKey(kCIOutputImageKey) as! CIImage, forKey: kCIInputImageKey)
+        blendWithMask.setValue(gradientAccumulator.image(), forKey: kCIInputMaskImageKey)
+        
+        imageAccumulator.setImage(blendWithMask.valueForKey(kCIOutputImageKey) as! CIImage)
+        imageView.image = UIImage(CIImage: blendWithMask.valueForKey(kCIOutputImageKey) as! CIImage)
     }
-    
     
 }
