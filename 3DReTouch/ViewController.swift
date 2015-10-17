@@ -23,36 +23,40 @@ import UIKit
 let fullResImageSide: CGFloat = 640
 
 let filters = [
-    Filter(name: "Increase Contrast", ciFilter: CIFilter(name: "CIColorControls")!,
-        variableParameterName: kCIInputContrastKey,
-        variableParameterDefault: 1,
-        variableParameterMultiplier: 0.05),
-    
-    Filter(name: "Decrease Contrast", ciFilter: CIFilter(name: "CIColorControls")!,
-        variableParameterName: kCIInputContrastKey,
-        variableParameterDefault: 1,
-        variableParameterMultiplier: -0.05),
-    
-    Filter(name: "Increase Saturation", ciFilter: CIFilter(name: "CIColorControls")!,
-        variableParameterName: kCIInputSaturationKey,
-        variableParameterDefault: 1,
-        variableParameterMultiplier: 0.1),
-    
-    Filter(name: "Decrease Saturation", ciFilter: CIFilter(name: "CIColorControls")!,
-        variableParameterName: kCIInputSaturationKey,
-        variableParameterDefault: 1,
-        variableParameterMultiplier: -0.1),
+    Filter(name: "Sharpen", ciFilter: CIFilter(name: "CISharpenLuminance")!,
+        variableParameterName: kCIInputSharpnessKey,
+        variableParameterDefault: 0,
+        variableParameterMultiplier: 0.25),
     
     Filter(name: "Darken", ciFilter: CIFilter(name: "CIExposureAdjust")!,
         variableParameterName: kCIInputEVKey,
         variableParameterDefault: 0,
-        variableParameterMultiplier: -0.075),
+        variableParameterMultiplier: -0.2),
     
     Filter(name: "Lighten", ciFilter: CIFilter(name: "CIExposureAdjust")!,
         variableParameterName: kCIInputEVKey,
         variableParameterDefault: 0,
-        variableParameterMultiplier: 0.075)
-    ]
+        variableParameterMultiplier: 0.2),
+    
+    Filter(name: "Increase Contrast", ciFilter: CIFilter(name: "CIColorControls")!,
+        variableParameterName: kCIInputContrastKey,
+        variableParameterDefault: 1,
+        variableParameterMultiplier: 0.1),
+    
+    Filter(name: "Decrease Contrast", ciFilter: CIFilter(name: "CIColorControls")!,
+        variableParameterName: kCIInputContrastKey,
+        variableParameterDefault: 1,
+        variableParameterMultiplier: -0.1),
+    
+    Filter(name: "Increase Saturation", ciFilter: CIFilter(name: "CIColorControls")!,
+        variableParameterName: kCIInputSaturationKey,
+        variableParameterDefault: 1,
+        variableParameterMultiplier: 0.15),
+    
+    Filter(name: "Decrease Saturation", ciFilter: CIFilter(name: "CIColorControls")!,
+        variableParameterName: kCIInputSaturationKey,
+        variableParameterDefault: 1,
+        variableParameterMultiplier: -0.15)]
 
 struct Filter
 {
@@ -134,7 +138,7 @@ class ViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSo
             imageView.image = UIImage(CIImage: imageAccumulator.image())
         }
     }
-    
+
     func applyFilterFromTouches(touches: Set<UITouch>)
     {
         guard let touch = touches.first
@@ -143,6 +147,8 @@ class ViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSo
             return
         }
 
+        // print(touch.previousLocationInView(imageView), touch.locationInView(imageView))
+        
         let imageScale = imageViewSide / fullResImageSide
         
         let location = touch.locationInView(imageView)
@@ -153,12 +159,14 @@ class ViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSo
         progressView.progress = Float(normalisedForce)
 
         let pendingUpdate = PendingUpdate(center: CIVector(x: location.x / imageScale, y: (imageViewSide - location.y) / imageScale),
-            radius: 40 + (normalisedForce * 40),
+            radius: 80,
             force: normalisedForce,
             filter: currentFilter)
         
         pendingUpdatesToApply.append(pendingUpdate)
     }
+    
+    var busy = false
     
     func update()
     {
@@ -169,6 +177,10 @@ class ViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSo
         
         let pendingUpdate = pendingUpdatesToApply.removeFirst()
      
+        print(busy)
+        
+        busy = true
+        
         dispatch_async(backgroundQueue)
         {
             self.gradientFilter.setValue(pendingUpdate.center,
@@ -190,6 +202,8 @@ class ViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSo
             dispatch_async(dispatch_get_main_queue())
             {
                 self.imageView.image = UIImage(CIImage: self.blendWithMask.valueForKey(kCIOutputImageKey) as! CIImage)
+                
+                self.busy = false
             }
             
         }
