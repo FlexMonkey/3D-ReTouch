@@ -147,8 +147,6 @@ class ViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSo
             return
         }
 
-        // print(touch.previousLocationInView(imageView), touch.locationInView(imageView))
-        
         let imageScale = imageViewSide / fullResImageSide
         
         let location = touch.locationInView(imageView)
@@ -165,9 +163,7 @@ class ViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSo
         
         pendingUpdatesToApply.append(pendingUpdate)
     }
-    
-    var busy = false
-    
+
     func update()
     {
         guard pendingUpdatesToApply.count > 0 else
@@ -176,11 +172,7 @@ class ViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSo
         }
         
         let pendingUpdate = pendingUpdatesToApply.removeFirst()
-     
-        print(busy)
-        
-        busy = true
-        
+
         dispatch_async(backgroundQueue)
         {
             self.gradientFilter.setValue(pendingUpdate.center,
@@ -202,8 +194,6 @@ class ViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSo
             dispatch_async(dispatch_get_main_queue())
             {
                 self.imageView.image = UIImage(CIImage: self.blendWithMask.valueForKey(kCIOutputImageKey) as! CIImage)
-                
-                self.busy = false
             }
             
         }
