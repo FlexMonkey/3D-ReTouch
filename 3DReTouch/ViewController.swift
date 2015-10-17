@@ -191,9 +191,11 @@ class ViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSo
             
             self.imageAccumulator.setImage(self.blendWithMask.valueForKey(kCIOutputImageKey) as! CIImage)
 
+            let finalImage = UIImage(CIImage: self.blendWithMask.valueForKey(kCIOutputImageKey) as! CIImage)
+            
             dispatch_async(dispatch_get_main_queue())
             {
-                self.imageView.image = UIImage(CIImage: self.blendWithMask.valueForKey(kCIOutputImageKey) as! CIImage)
+                self.imageView.image = finalImage
             }
             
         }
