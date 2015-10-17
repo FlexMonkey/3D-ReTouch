@@ -5,24 +5,24 @@
 //  Created by Simon Gladman on 15/10/2015.
 //  Copyright © 2015 Simon Gladman. All rights reserved.
 //
+//  This program is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation, either version 3 of the License, or
+//  (at your option) any later version.
+//
+//  This program is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU General Public License for more details.
+
+//  You should have received a copy of the GNU General Public License
+//  along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 import UIKit
 
 let fullResImageSide: CGFloat = 640
-let black = CIColor(red: 0, green: 0, blue: 0, alpha: 0)
-let white = CIColor(red: 1, green: 1, blue: 1, alpha: 1)
 
 let filters = [
-    Filter(name: "Darken", ciFilter: CIFilter(name: "CIExposureAdjust")!,
-        variableParameterName: kCIInputEVKey,
-        variableParameterDefault: 0,
-        variableParameterMultiplier: -0.05),
-    
-    Filter(name: "Lighten", ciFilter: CIFilter(name: "CIExposureAdjust")!,
-        variableParameterName: kCIInputEVKey,
-        variableParameterDefault: 0,
-        variableParameterMultiplier: 0.05),
-    
     Filter(name: "Increase Contrast", ciFilter: CIFilter(name: "CIColorControls")!,
         variableParameterName: kCIInputContrastKey,
         variableParameterDefault: 1,
@@ -41,7 +41,17 @@ let filters = [
     Filter(name: "Decrease Saturation", ciFilter: CIFilter(name: "CIColorControls")!,
         variableParameterName: kCIInputSaturationKey,
         variableParameterDefault: 1,
-        variableParameterMultiplier: -0.1)
+        variableParameterMultiplier: -0.1),
+    
+    Filter(name: "Darken", ciFilter: CIFilter(name: "CIExposureAdjust")!,
+        variableParameterName: kCIInputEVKey,
+        variableParameterDefault: 0,
+        variableParameterMultiplier: -0.075),
+    
+    Filter(name: "Lighten", ciFilter: CIFilter(name: "CIExposureAdjust")!,
+        variableParameterName: kCIInputEVKey,
+        variableParameterDefault: 0,
+        variableParameterMultiplier: 0.075)
     ]
 
 struct Filter
@@ -55,17 +65,17 @@ struct Filter
 
 class ViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSource
 {
-    let gradient = CIFilter(name: "CIGaussianGradient", withInputParameters: ["inputColor1": black, "inputColor0": white])!
-    let gradientBlur = CIFilter(name: "CIGaussianBlur", withInputParameters: [kCIInputRadiusKey: 10])!
-    let blendWithMask = CIFilter(name: "CIBlendWithMask")!
-    var filter = filters.first!
-
-    let gradientCompositeFilter = CIFilter(name: "CISourceOverCompositing")!
+    typealias PendingUpdate = (center: CIVector, radius: CGFloat, force: CGFloat, filter: Filter)
     
-    let gradientAccumulator = CIImageAccumulator(
-        extent: CGRect(origin: CGPointZero,
-        size: CGSize(width: fullResImageSide, height: fullResImageSide)),
-        format: kCIFormatARGB8)
+    let backgroundQueue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0)
+    
+    let gradientFilter = CIFilter(name: "CIGaussianGradient",
+        withInputParameters: [
+            "inputColor1": CIColor(red: 0, green: 0, blue: 0, alpha: 0),
+            "inputColor0": CIColor(red: 1, green: 1, blue: 1, alpha: 1)])!
+   
+    let blendWithMask = CIFilter(name: "CIBlendWithMask")!
+    var currentFilter = filters.first!
     
     let imageAccumulator = CIImageAccumulator(
         extent: CGRect(origin: CGPointZero,
@@ -76,13 +86,15 @@ class ViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSo
     let picker = UIPickerView()
     let progressView = UIProgressView()
     
-    let ciSunflower = CIImage(image: UIImage(named: "sunflower.jpg")!)!
+    let sunflowerImage = CIImage(image: UIImage(named: "sunflower.jpg")!)!
+ 
+    var pendingUpdatesToApply = [PendingUpdate]()
     
     override func viewDidLoad()
     {
         super.viewDidLoad()
   
-        imageAccumulator.setImage(ciSunflower)
+        imageAccumulator.setImage(sunflowerImage)
 
         imageView.image = UIImage(CIImage: imageAccumulator.image())
         imageView.contentScaleFactor = 0.25
@@ -94,18 +106,19 @@ class ViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSo
         
         picker.delegate = self
         picker.dataSource = self
+        
+        let displayLink = CADisplayLink(target: self, selector: Selector("update"))
+        displayLink.addToRunLoop(NSRunLoop.mainRunLoop(), forMode: NSDefaultRunLoopMode)
     }
 
     override func touchesBegan(touches: Set<UITouch>, withEvent event: UIEvent?)
     {
-        gradientAccumulator.setImage(CIImage())
-
-        createGradientFromTouches(touches, withEvent: event)
+        applyFilterFromTouches(touches)
     }
     
     override func touchesMoved(touches: Set<UITouch>, withEvent event: UIEvent?)
     {
-        createGradientFromTouches(touches, withEvent: event)
+        applyFilterFromTouches(touches)
     }
     
     override func touchesEnded(touches: Set<UITouch>, withEvent event: UIEvent?)
@@ -117,12 +130,12 @@ class ViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSo
     {
         if motion == UIEventSubtype.MotionShake
         {
-            imageAccumulator.setImage(ciSunflower)
+            imageAccumulator.setImage(sunflowerImage)
             imageView.image = UIImage(CIImage: imageAccumulator.image())
         }
     }
     
-    func createGradientFromTouches(touches: Set<UITouch>, withEvent event: UIEvent?)
+    func applyFilterFromTouches(touches: Set<UITouch>)
     {
         guard let touch = touches.first
             where imageView.frame.contains(touches.first!.locationInView(imageView)) else
@@ -130,36 +143,56 @@ class ViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSo
             return
         }
 
-        let imageScale = imageViewSide / fullResImageSide;
+        let imageScale = imageViewSide / fullResImageSide
         
         let location = touch.locationInView(imageView)
-        let normalisedForce = touch.force / touch.maximumPossibleForce
+        let normalisedForce = traitCollection.forceTouchCapability == UIForceTouchCapability.Available ?
+            touch.force / touch.maximumPossibleForce :
+            CGFloat(0.5)
         
         progressView.progress = Float(normalisedForce)
+
+        let pendingUpdate = PendingUpdate(center: CIVector(x: location.x / imageScale, y: (imageViewSide - location.y) / imageScale),
+            radius: 40 + (normalisedForce * 40),
+            force: normalisedForce,
+            filter: currentFilter)
         
-        gradient.setValue(CIVector(x: location.x / imageScale, y: (imageViewSide - location.y) / imageScale),
-            forKey: kCIInputCenterKey)
-        gradient.setValue(10 + (normalisedForce * 20), forKey: "inputRadius")
+        pendingUpdatesToApply.append(pendingUpdate)
+    }
+    
+    func update()
+    {
+        guard pendingUpdatesToApply.count > 0 else
+        {
+            return
+        }
         
-        gradientCompositeFilter.setValue(gradientAccumulator.image(), forKey: kCIInputBackgroundImageKey)
-        gradientCompositeFilter.setValue(gradient.valueForKey(kCIOutputImageKey), forKey: kCIInputImageKey)
-        
-        gradientAccumulator.setImage(gradientCompositeFilter.valueForKey(kCIOutputImageKey) as! CIImage)
-        
-        gradientBlur.setValue(gradientAccumulator.image(), forKey: kCIInputImageKey)
-        gradientAccumulator.setImage(gradientBlur.valueForKey(kCIOutputImageKey) as! CIImage)
-        
-        filter.ciFilter.setValue(imageAccumulator.image(), forKey: kCIInputImageKey)
-        filter.ciFilter.setValue(filter.variableParameterDefault + (normalisedForce * filter.variableParameterMultiplier),
-            forKey: filter.variableParameterName)
-        
-        blendWithMask.setValue(imageAccumulator.image(), forKey: kCIInputBackgroundImageKey)
-        blendWithMask.setValue(filter.ciFilter.valueForKey(kCIOutputImageKey) as! CIImage,
-            forKey: kCIInputImageKey)
-        blendWithMask.setValue(gradientAccumulator.image(), forKey: kCIInputMaskImageKey)
-        
-        imageAccumulator.setImage(blendWithMask.valueForKey(kCIOutputImageKey) as! CIImage)
-        imageView.image = UIImage(CIImage: blendWithMask.valueForKey(kCIOutputImageKey) as! CIImage)
+        let pendingUpdate = pendingUpdatesToApply.removeFirst()
+     
+        dispatch_async(backgroundQueue)
+        {
+            self.gradientFilter.setValue(pendingUpdate.center,
+                forKey: kCIInputCenterKey)
+            self.gradientFilter.setValue(pendingUpdate.radius, forKey: "inputRadius")
+
+            pendingUpdate.filter.ciFilter.setValue(self.imageAccumulator.image(), forKey: kCIInputImageKey)
+            pendingUpdate.filter.ciFilter.setValue(
+                pendingUpdate.filter.variableParameterDefault + (pendingUpdate.force * pendingUpdate.filter.variableParameterMultiplier),
+                forKey: pendingUpdate.filter.variableParameterName)
+            
+            self.blendWithMask.setValue(self.imageAccumulator.image(), forKey: kCIInputBackgroundImageKey)
+            self.blendWithMask.setValue(pendingUpdate.filter.ciFilter.valueForKey(kCIOutputImageKey) as! CIImage,
+                forKey: kCIInputImageKey)
+            self.blendWithMask.setValue(self.gradientFilter.valueForKey(kCIOutputImageKey) as! CIImage, forKey: kCIInputMaskImageKey)
+            
+            self.imageAccumulator.setImage(self.blendWithMask.valueForKey(kCIOutputImageKey) as! CIImage)
+
+            dispatch_async(dispatch_get_main_queue())
+            {
+                self.imageView.image = UIImage(CIImage: self.blendWithMask.valueForKey(kCIOutputImageKey) as! CIImage)
+            }
+            
+        }
     }
     
     override func viewDidLayoutSubviews()
@@ -199,7 +232,7 @@ class ViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSo
     
     func pickerView(pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int)
     {
-        filter = filters[row]
+        currentFilter = filters[row]
     }
     
     func pickerView(pickerView: UIPickerView, titleForRow row: Int, forComponent component: Int) -> String?
